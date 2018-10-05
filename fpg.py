@@ -46,7 +46,16 @@ class Node(dict):
         self.count = 0
 
     def __str__(self):
-        return "Node:", self.name
+        # Root
+        if self.name is None:
+            return "Node<_Root_>"
+        elif self.parent is None:
+            return "Node<"+ self.name + ": ?>"
+        else:
+            return "Node<"+ self.name + ": %s>" % self.parent.name if self.parent.name else "_Root_"
+
+    def __repr__(self):
+        return self.__str__()
 
     def is_root(self):
         return self.name == None
@@ -57,13 +66,13 @@ class Node(dict):
     def __lt__(self, other):
         return self.count < other.count
 
-    def connect(self, child):
-        """
-        Connect parent and child nodes by setting attr. of nodes
-        """
-        self.child[child] = child
-        child.parent = self
-        child.count = child.count + 1
+def connect(parent, child):
+    """
+    Connect parent and child nodes by setting attr. of nodes
+    """
+    parent.child[child] = child
+    child.parent = parent
+    child.count = child.count + 1
 
 def subset(ori):
     ret = list(chain.from_iterable([combinations(ori, i) for i in xrange(1, len(ori)+1)]))
@@ -105,6 +114,15 @@ def traceback_to_patterns(traceback_list, minsup, trans):
             del patterns[k]
     return patterns
 
+def set_string(itemset):
+    return "(" + ", ".join(x for x in itemset) + ")"
+
+def print_result(patterns):
+    # print freq. itemset
+    print ">> Frequent Itemsets <<"
+    for pattern in patterns.keys():
+        print set_string(pattern)
+
 def cmd():
     # Parse options
     parser = ArgumentParser()
@@ -121,29 +139,25 @@ def cmd():
     # one item count
     count_freq(count_dict, itemsets, trans)
     # sort one-item by count
-    sorted_freq_dict = sorted(count_dict.iteritems(), key=lambda x: x[1], reverse=True)
+    sorted_freq_list = sorted(count_dict.iteritems(), key=lambda x: x[1], reverse=True)
     # check minsup
-    sorted_freq_dict = filter(lambda x: support(count_dict, x[0], trans) >= options.minsup, sorted_freq_dict)
+    sorted_freq_list = filter(lambda x: support(count_dict, x[0], trans) >= options.minsup, sorted_freq_list)
     # assign index of elements in freq_list
     freq_list_index_map = {}
-    for i, x in enumerate(sorted_freq_dict):
+    for i, x in enumerate(sorted_freq_list):
         freq_list_index_map[x[0]] = i
-    print sorted_freq_dict
-    print freq_list_index_map
 
     ## Modify and reorder all trans. according to sorted one-item list
     # create set of freq. one item
-    freq_one_item_set = {x for frozenset_count in sorted_freq_dict for x in frozenset_count[0]}
-    print freq_one_item_set
+    freq_one_item_set = {x for frozenset_count in sorted_freq_list for x in frozenset_count[0]}
     # represent sorted trans. by 2d list
     sorted_trans = [list(trans_set & freq_one_item_set) for trans_set in trans]
-    # delete and rearrange trans. by sorted_freq_dict
+    # delete and rearrange trans. by sorted_freq_list
     for idx, arr in enumerate(sorted_trans):
         sorted_trans[idx] = sorted(arr, key=lambda x: freq_list_index_map[frozenset([x])])
-    print sorted_trans
 
     ## Construct FP-Tree
-    horizon_access = defaultdict(list) # {[name...], ...}
+    horizon_access = defaultdict(list) # {name: [node...]}
     root = Node()
     for tran in sorted_trans:
         cur_node = root
@@ -155,27 +169,28 @@ def cmd():
                 next_node = Node(x)
                 horizon_access[x].append(next_node)
             # connect and count
-            cur_node.connect(next_node)
+            connect(cur_node, next_node)
             # move to next node
             cur_node = next_node
 
-    print "----- TEST ----"
-    m1 = Node("m")
-    m1.count = 2
-    a = Node("a")
-    a.count = 3
-    c = Node("c")
-    c.count = 3
-    f = Node("f")
-    f.count = 4
+    ## Generate patterns from item
+    patterns = {}
+    for item_name, item_linkedlist in horizon_access.iteritems():
+        traceback_list = []
+        for item_node in item_linkedlist:
+            traceback = []
+            while item_node is not None:
+                traceback.append(item_node)
+                item_node = item_node.parent
+            traceback_list.append(traceback)
+        patterns.update(traceback_to_patterns(traceback_list, options.minsup, trans))
+    
+    # update freq. one-itemset
+    for one_itemset, count in sorted_freq_list:
+        patterns[one_itemset] = count
 
-    m2 = Node("m")
-    m2.count = 1
-    b = Node("b")
-    b.count = 1
-
-    tracebacks = [[m1,a,c,f], [m2,b,a,c,f]]
-    print traceback_to_patterns(tracebacks, options.minsup, trans)
+    ## print all freq. itemsets
+    print_result(patterns)
 
 if __name__ == '__main__':
     cmd();
