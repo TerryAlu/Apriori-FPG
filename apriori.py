@@ -88,7 +88,7 @@ def cmd():
         # gen. Lk-1
         count_freq(count_dict, lc_set[-1], trans)
         for x in lc_set[-1].copy():
-            sup = 1.0*count_dict[x]/len(itemsets)
+            sup = 1.0*count_dict[x]/len(trans)
             if sup < options.minsup:
                 lc_set[-1].remove(x)
         if len(lc_set[-1]) == 0:
