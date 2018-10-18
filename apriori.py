@@ -73,8 +73,8 @@ def cmd():
     # Parse options
     parser = ArgumentParser()
     parser.add_argument('-f', '--file', help='Input csv file path (data separating with comma)', dest='filepath', required=True)
-    parser.add_argument('-s', '--minsup', help='minumum support (0~1)', dest='minsup', default=0.5)
-    parser.add_argument('-c', '--minconf', help='minimum confidence (0~1)', dest='minconf', default=0.9)
+    parser.add_argument('-s', '--minsup', help='minumum support (0~1)', dest='minsup', default=0.5, type=float)
+    parser.add_argument('-c', '--minconf', help='minimum confidence (0~1)', dest='minconf', default=0.9, type=float)
     options = parser.parse_args()
 
     itemsets, trans = read_data(options.filepath)
@@ -89,7 +89,7 @@ def cmd():
         count_freq(count_dict, lc_set[-1], trans)
         for x in lc_set[-1].copy():
             sup = 1.0*count_dict[x]/len(trans)
-            if sup < float(options.minsup):
+            if sup < options.minsup:
                 lc_set[-1].remove(x)
         if len(lc_set[-1]) == 0:
             break
@@ -106,7 +106,7 @@ def cmd():
             for x in subset:
                 inference = y.difference(x)
                 # confidence: ratio of trans. which contains x also contains y
-                if count_dict.get(x, 0)>0 and 1.0*count_dict[y]/count_dict[x] >= float(options.minconf):
+                if count_dict.get(x, 0)>0 and 1.0*count_dict[y]/count_dict[x] >= options.minconf:
                     rules[x] = rules.get(x, None) or []
                     rules[x].append((inference, 1.0*count_dict[y]/count_dict[x]))
 

@@ -127,7 +127,7 @@ def cmd():
     # Parse options
     parser = ArgumentParser()
     parser.add_argument('-f', '--file', help='Input csv file path (data separating with comma)', dest='filepath', required=True)
-    parser.add_argument('-s', '--minsup', help='minumum support (0~1)', dest='minsup', default=0.5)
+    parser.add_argument('-s', '--minsup', help='minumum support (0~1)', dest='minsup', default=0.5, type=float)
     options = parser.parse_args()
 
     itemsets, trans = read_data(options.filepath)
