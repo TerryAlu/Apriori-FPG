@@ -89,7 +89,7 @@ def cmd():
         count_freq(count_dict, lc_set[-1], trans)
         for x in lc_set[-1].copy():
             sup = 1.0*count_dict[x]/len(trans)
-            if sup < options.minsup:
+            if sup < float(options.minsup):
                 lc_set[-1].remove(x)
         if len(lc_set[-1]) == 0:
             break
@@ -106,7 +106,7 @@ def cmd():
             for x in subset:
                 inference = y.difference(x)
                 # confidence: ratio of trans. which contains x also contains y
-                if count_dict.get(x, 0)>0 and 1.0*count_dict[y]/count_dict[x] >= options.minconf:
+                if count_dict.get(x, 0)>0 and 1.0*count_dict[y]/count_dict[x] >= float(options.minconf):
                     rules[x] = rules.get(x, None) or []
                     rules[x].append((inference, 1.0*count_dict[y]/count_dict[x]))
 
