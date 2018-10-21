@@ -5,11 +5,12 @@ from collections import defaultdict
 def read_data(filepath):
     """
     Return itemsets & trans array from the file
+    trans: [(set(), <count>)]
     """
     trans = []
     with open(filepath) as fp:
         for line in fp:
-            trans.append({x.strip() for x in line.split(',')})
+            trans.append(({x.strip() for x in line.split(',')}, 1))
 
     return trans
 
@@ -20,9 +21,9 @@ def count_freq(count_dict, set_list, trans):
     for x in set_list:
         count_dict[x] = 0
     for x in set_list:
-        for y in trans:
-            if x in y:
-                count_dict[x] = count_dict[x] + 1
+        for tran in trans:
+            if x in tran[0]:
+                count_dict[x] = count_dict[x] + tran[1]
 
 
 def sorted_mincount_trans(trans, mincount, subtree=False):
@@ -33,7 +34,7 @@ def sorted_mincount_trans(trans, mincount, subtree=False):
     """
 
     # trans to itemset
-    itemsets = {y for x in trans for y in x}
+    itemsets = {y for x in trans for y in x[0]}
 
     ## Create sorted one-item list
     count_dict = {}
@@ -52,11 +53,11 @@ def sorted_mincount_trans(trans, mincount, subtree=False):
     # create set of freq. one item
     freq_one_item_set = {x for x, y in sorted_freq_list}
     # delete unfreq, items and represent sorted trans. by 2d list
-    sorted_trans = [list(trans_set & freq_one_item_set) for trans_set in trans]
+    sorted_trans = [(list(tran[0] & freq_one_item_set), tran[1]) for tran in trans]
     # rearrange trans. by sorted_freq_list
     if not subtree:
-        for idx, arr in enumerate(sorted_trans):
-            sorted_trans[idx] = sorted(arr, key=lambda x: freq_list_index_map[x])
+        for idx, tup in enumerate(sorted_trans):
+            sorted_trans[idx] = (sorted(tup[0], key=lambda x: freq_list_index_map[x]), tup[1])
 
     return sorted_freq_list, sorted_trans
 
@@ -126,7 +127,7 @@ class Tree(dict):
         self.root = Node()
         for tran in self.sm_trans:
             cur_node = self.root
-            for x in tran:
+            for x in tran[0]:
                 # try to get old node
                 next_node = cur_node.child.get(x, None)
                 # if new node is created
@@ -134,7 +135,7 @@ class Tree(dict):
                     next_node = Node(x)
                     self.horizon_access[x].append(next_node)
                 # connect and count
-                self.connect(cur_node, next_node)
+                self.connect(cur_node, next_node, tran[1])
                 # move to next node
                 cur_node = next_node
         # print "\n\n----"
@@ -163,8 +164,7 @@ class Tree(dict):
                     while not item_node.is_root():
                         traceback.add(item_node.name)
                         item_node = item_node.parent
-                    for x in xrange(count):
-                        subtree_trans.append(traceback)
+                    subtree_trans.append((traceback, count))
                 subtree = Tree(subtree_trans, self.mincount, item)
                 ret.extend(subtree.find_patterns())
 
@@ -203,13 +203,13 @@ class Tree(dict):
             current_node = current_node.child.values()[0]
         return len(current_node.child)>1 
 
-    def connect(self, parent, child):
+    def connect(self, parent, child, count=1):
         """
         Connect parent and child nodes by setting attr. of nodes
         """
         parent.child[child.name] = child
         child.parent = parent
-        child.count = child.count + 1
+        child.count = child.count + count
 
 def set_string(itemset):
     return "(" + ", ".join(x for x in itemset) + ")"
