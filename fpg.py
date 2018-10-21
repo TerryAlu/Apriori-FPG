@@ -138,8 +138,6 @@ class Tree(dict):
                 self.connect(cur_node, next_node, tran[1])
                 # move to next node
                 cur_node = next_node
-        # print "\n\n----"
-        # print self.print_tree(self.root)
 
     def print_tree(self, root):
         print root
@@ -164,6 +162,7 @@ class Tree(dict):
                     while not item_node.is_root():
                         traceback.add(item_node.name)
                         item_node = item_node.parent
+                    # create traceback with btn item count
                     subtree_trans.append((traceback, count))
                 subtree = Tree(subtree_trans, self.mincount, item)
                 ret.extend(subtree.find_patterns())
